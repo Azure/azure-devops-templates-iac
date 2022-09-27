@@ -1,0 +1,27 @@
+parameters:
+  - name: "environment"
+    displayName: "(String) Name of the environment where the resource will be deployed."
+    type: string
+    default: "test"
+  - name: "connectedServiceNameARM"
+    displayName: "(String) Name of the DevOps Service Connection to use."
+    type: string
+  - name: "workingDirectoryPath"
+    displayName: "(String) Path of the working directory. Should be the directory with Bicep code."
+    type: string
+    default: "$(System.DefaultWorkingDirectory)"
+  - name: "templateFilePath"
+    displayName: "(String) Path to main bicep template file to deploy."
+    type: string
+
+steps:
+  - task: AzureCLI@2
+    name: buildBicep_${{ parameters.environment }}
+    displayName: "Build Bicep file to insure syntax"
+    inputs:
+      azureSubscription: ${{ parameters.connectedServiceNameARM  }}
+      scriptLocation: inlineScript
+      scriptType: pscore
+      workingDirectory: ${{ parameters.workingDirectoryPath }}
+      inlineScript: |
+        az bicep build --file ${{ parameters.templateFilePath }} --stdout --verbose

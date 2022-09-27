@@ -1,0 +1,25 @@
+# Documentation on github/super-linter can be found here https://github.com/github/super-linter/blob/main/README.md#Environment-variables
+# Note: the flag RUN_LOCAL set the variable VALIDATE_ALL_CODEBASE to true
+
+parameters:
+  - name: workingDirectoryPath
+    displayName: "(String) Path of the root directory containing the code to scan."
+    type: string
+    default: $(System.DefaultWorkingDirectory)
+
+  - name: superLinterDockerAdditionalEnvironmentVariables
+    displayName: "(String) List of environment variables to insert in the docker run command in -e KEY=VAL format. "
+    type: string
+    default: ""
+
+steps:
+  - task: Powershell@2
+    name: runSuperLinter
+    displayName: "Scan code using GitHub Super-Linter"
+    workingDirectory: ${{ parameters.workingDirectoryPath }}
+    inputs:
+      pwsh: true
+      targetType: inline
+      script: |
+        docker pull github/super-linter:latest
+        docker run -e RUN_LOCAL=true $(superLinterDockerAdditionalEnvironmentVariables) -v ${{ parameters.workingDirectoryPath }}:/tmp/lint github/super-linter
