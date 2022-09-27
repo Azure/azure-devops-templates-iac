@@ -1,0 +1,28 @@
+parameters:
+  - name: "moduleName"
+    displayName: "(String) Name of the module to initialize."
+    type: string
+    default: "test"
+  - name: destinationDirectory
+    displayName: "(String) Path of the directory to use, or to create if it doesn't exist, that will host the copied module in the artifact staging directory."
+    type: string
+  - name: sourceDirectory
+    displayName: "(String) Path of the directory containing the files of the module to copy over the in the artifact staging directory."
+    type: string
+
+steps:
+  - task: PowerShell@2
+    displayName: "Create directory structure to receive module ${{ parameters.moduleName }}"
+    inputs:
+      targetType: inline
+      script: |
+        New-Item -ItemType "directory" -Path "${{ parameters.destinationDirectory }}"
+  - task: CopyFiles@2
+    displayName: "Copy files for ${{ parameters.moduleName }}"
+    inputs:
+      SourceFolder: "${{ parameters.sourceDirectory }}"
+      Contents: |
+        **/*
+        !.git/**/*
+        !.test/**/*
+      TargetFolder: "${{ parameters.destinationDirectory }}"

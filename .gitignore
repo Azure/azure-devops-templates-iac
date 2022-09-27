@@ -1,0 +1,20 @@
+#Example bicep-example-keyvault
+examples_use_cases/bicep-example-keyvault/modules/
+examples_use_cases/bicep-example-keyvault/modules/**
+
+#Example terraform-azurerm-module-resource-group
+
+**/.terraform/*
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+examples_use_cases/terraform-azurerm-module-resource-group/examples/*/.pre-commit-config.yaml
+examples_use_cases/terraform-azurerm-module-resource-group/examples/*/.tflint.hcl

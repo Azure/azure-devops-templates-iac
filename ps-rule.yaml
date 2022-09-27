@@ -1,0 +1,43 @@
+#
+# PSRule for Azure configuration
+#
+
+# Please see the documentation for all configuration options:
+# https://aka.ms/ps-rule/options
+# https://aka.ms/ps-rule-azure/options
+
+# Configure binding for local rules.
+binding:
+  preferTargetInfo: true
+  targetType:
+    - type
+    - resourceType
+
+# Require minimum versions of modules.
+requires:
+  PSRule: "@pre >=2.2.0"
+  PSRule.Rules.Azure: "@pre >=1.17.1"
+
+# Use PSRule for Azure.
+include:
+  module:
+    - PSRule.Rules.Azure
+
+output:
+  culture:
+    - "en-US"
+
+input:
+  pathIgnore:
+    # Ignore other files in the repository.
+    - ".vscode/"
+    - ".github/"
+    - "*.md"
+    # Exclude modules but not tests.
+    - "modules/**/*.bicep"
+    - "!/modules/**/*.tests.bicep"
+
+configuration:
+  AZURE_PARAMETER_FILE_EXPANSION: true
+  AZURE_BICEP_FILE_EXPANSION: true
+  AZURE_BICEP_FILE_EXPANSION_TIMEOUT: 10

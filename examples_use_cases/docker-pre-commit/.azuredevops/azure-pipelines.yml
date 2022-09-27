@@ -1,0 +1,43 @@
+parameters:
+  - name: dockerRegistryServiceConnection
+    displayName: "Name of the service connection to use to connect to the Docker Registry containing the pre-commit image."
+    type: string
+    default: ""
+  - name: repositoryName
+    displayName: "Name of the pre-commit image in the registry (also called repository). Often the same name as the current code repository."
+    type: string
+    default: "docker-pre-commit"
+
+resources:
+  repositories:
+    - repository: azure-devops-templates-iac
+      name: "#{ProjectName}#/azure-devops-templates-iac"
+      type: git
+      ref: refs/tags/1.0.0
+
+trigger: none
+
+variables:
+  dockerRegistryServiceConnection: "${{ parameters.dockerRegistryServiceConnection }}"
+  repositoryName: "${{ parameters.repositoryName }}"
+  dockerfileDirectoryPath: "$(Build.ArtifactStagingDirectory)"
+  dockerfileName: "Dockerfile"
+
+jobs:
+  - job: buildDockerImagePreCommit
+    displayName: "Build and publish pre-commit docker image"
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+      - checkout: self
+      - template: steps/tools/create-build-artifact.yaml@azure-devops-templates-iac
+        parameters:
+          sourceDirectory: "$(Build.SourcesDirectory)"
+          artifactDirectory: "$(dockerfileDirectoryPath)"
+          artifactName: "$(repositoryName)"
+      - template: steps/docker/build-publish-acr.yaml@azure-devops-templates-iac
+        parameters:
+          dockerRegistryServiceConnection: "$(dockerRegistryServiceConnection)"
+          repositoryName: "$(repositoryName)"
+          dockerfileDirectoryPath: "$(dockerfileDirectoryPath)"
+          dockerfileName: "$(dockerfileName)"
