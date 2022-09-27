@@ -1,0 +1,78 @@
+parameters:
+  - name: dockerRegistryServiceConnection
+    displayName: "(String) Name of the service connection used to connect to the target Docker registry."
+    type: string
+  - name: repositoryName
+    displayName: "(String) Name of the repository generating the image and hosting the image on the ACR instance."
+    type: string
+  - name: dockerfileDirectoryPath
+    displayName: "(String) Path of the directory where the desired dockerfile resides in."
+    type: string
+  - name: dockerfileName
+    displayName: "(String) Name of the DockerFile to build and publish"
+    type: string
+    default: "Dockerfile"
+
+steps:
+  - task: Powershell@2
+    displayName: Display variables in use
+    name: displayVariables
+    inputs:
+      targetType: "inline"
+      script: |
+        if('$(build.Reason)' -eq 'PullRequest'){ $isPullRequest=$True;Write-Host "##vso[task.setvariable variable=isPullRequest;isOutput=true;]$isPullRequest" }
+        elseif('$(build.SourceBranch)' -eq 'refs/heads/main') { $isMainBranch=$True;Write-Host "##vso[task.setvariable variable=isMainBranch;isOutput=true;]$isMainBranch" }
+        elseif('$(build.SourceBranch)' -like 'refs/heads/release/*'){ $isReleaseBranch=$True;Write-Host "##vso[task.setvariable variable=isReleaseBranch;isOutput=true;]$isReleaseBranch" }
+
+        Write-Host 'buildId:  $(build.BuildId)'
+        Write-Host 'buildNumber: $(build.BuildNumber)'
+        Write-Host 'buildReason: $(build.Reason)'
+        Write-Host 'buildSourceBranch: $(build.SourceBranch)'
+        Write-Host 'buildRepositoryURI: $(build.Repository.Uri)'
+        Write-Host 'isPullRequest: $isPullRequest'
+        Write-Host 'isMainBranch: $isMainBranch'
+        Write-Host 'isReleaseBranch: $isReleaseBranch'
+  - task: Powershell@2
+    displayName: Define the tags to apply based on current variables and state
+    name: defineTags
+    inputs:
+      targetType: "inline"
+      script: |
+        switch -wildcard ('$(build.SourceBranch)'){
+          "*release*" { $split=$_.split("/"); $branchTag=$split[3]; $dockerAddTag='release-$(build.BuildNumber)'; break; }
+          "*main*" { $split=$_.split("/"); $branchTag=$split[2]; $dockerAddTag='main'; break; }
+          default { $branchTag=$null; if('$(isPullRequest)' -eq $true){$dockerAddTag='pr-$(build.BuildNumber)'} else{$dockerAddTag='dev'}; break; }
+        }
+        Write-Host 'Tags to apply to container'
+        Write-Host '$(build.BuildNumber)'
+        Write-Host $dockerAddTag
+        Write-Host $branchTag
+        Write-Host "##vso[task.setvariable variable=dockerAdditionalTag;]$dockerAddTag"
+        Write-Host "##vso[task.setvariable variable=dockerAdditionalTagOut;isOutput=true;]$dockerAddTag"
+        Write-Host "##vso[task.setvariable variable=dockerBranchTag;]$branchTag"
+        Write-Host "##vso[task.setvariable variable=dockerBranchTagOut;isOutput=true;]$branchTag"
+  - task: Docker@2
+    displayName: Login to target Docker container registry
+    name: dockerRegistryLogin
+    inputs:
+      command: login
+      containerRegistry: "${{ parameters.dockerRegistryServiceConnection }}"
+  - task: Docker@2
+    displayName: Build and push an image to target Docker container registry
+    name: dockerBuild
+    inputs:
+      command: buildAndPush
+      repository: "${{ parameters.repositoryName }}"
+      dockerfile: "${{ parameters.dockerfileDirectoryPath }}/${{ parameters.dockerfileName }}"
+      containerRegistry: "${{ parameters.dockerRegistryServiceConnection }}"
+      tags: |
+        $(build.BuildNumber)
+        $(dockerAdditionalTag)
+        $(dockerBranchTag)
+  - task: Docker@2
+    displayName: Logout of target Docker container registry
+    name: dockerRegistryLogout
+    condition: succeededOrFailed()
+    inputs:
+      command: logout
+      containerRegistry: "${{ parameters.dockerRegistryServiceConnection }}"

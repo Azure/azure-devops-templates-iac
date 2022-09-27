@@ -1,0 +1,28 @@
+parameters:
+  - name: sourceDirectory
+    displayName: "(String) Path of the directory containing all the files to create an artifact with."
+    type: string
+    default: ""
+  - name: artifactDirectory
+    displayName: "(String) Path of the directory where the files will be copied to. This folder is the root of the content that will be published as an artifact."
+    type: string
+    default: ""
+  - name: artifactName
+    displayName: "(String) Name of the build artifact to generate"
+    type: string
+    default: ""
+
+steps:
+  - task: CopyFiles@2
+    displayName: Copy files
+    inputs:
+      SourceFolder: "${{ parameters.sourceDirectory }}"
+      Contents: |
+        **/*
+        !.git/**/*
+      TargetFolder: "${{ parameters.artifactDirectory }}"
+  - task: PublishBuildArtifacts@1
+    displayName: Publish build artifacts
+    inputs:
+      PathtoPublish: "${{ parameters.artifactDirectory }}"
+      ArtifactName: "${{ parameters.artifactName }}"

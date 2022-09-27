@@ -1,0 +1,127 @@
+parameters:
+  - name: exampleList
+    displayName: "List of example environment to be tested."
+    type: object
+    default:
+      - default
+      - disabled
+  - name: connectedServiceNameARM
+    displayName: "Name of the connected service to use for the ARM deployment."
+    type: string
+    default: "#{ARMServiceConnectedName}#"
+  - name: dockerRegistryServiceConnection
+    displayName: "Name of the connected service to use to connect to the Docker (ACR) registry of the same name."
+    type: string
+    default: "#{DockerServiceConnectedName}#"
+  - name: dockerPreCommitImageTag
+    displayName: "Docker Tag of the pre-commit image to use during the validation."
+    type: string
+    default: "main"
+  - name: dockerPreCommitImageName
+    displayName: "Name of the pre-commit image to use during the validation."
+    type: string
+    default: "docker-pre-commit"
+
+resources:
+  repositories:
+    - repository: azure-devops-templates-iac
+      name: "#{ProjectName}#/azure-devops-templates-iac"
+      type: git
+      ref: refs/tags/1.0.0
+
+trigger: none
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  connectedServiceNameARM: "${{ parameters.connectedServiceNameARM }}"
+  dockerRegistryServiceConnection: "${{ parameters.dockerRegistryServiceConnection }}"
+  dockerPreCommitRegistry: "$(dockerRegistryServiceConnection).azurecr.io"
+  dockerPreCommitImageTag: "${{ parameters.dockerPreCommitImageTag }}"
+  dockerPreCommitImageName: "${{ parameters.dockerPreCommitImageName }}"
+  dockerfileDirectoryPath: "$(Build.StagingDirectory)"
+  dockerfileName: "Dockerfile"
+  artifactName: "$(Build.Repository.Name)-$(Build.BuildNumber)"
+  terraformStateResourceGroupName: "static-resources"
+  terraformStateStorageAccountName: "satfdevstaticcacn001"
+  terraformStateBlobContainerName: "state"
+  terraformPlanBlobContainerName: "plan"
+
+stages:
+  - stage: validateCode
+    displayName: "Validation"
+    jobs:
+      - job: createBuildArtifact
+        displayName: "Create pipeline artifact"
+        steps:
+          - checkout: self
+          - template: steps/tools/create-build-artifact.yaml@azure-devops-templates-iac
+            parameters:
+              sourceDirectory: "$(Build.SourcesDirectory)"
+              artifactDirectory: "$(Build.ArtifactStagingDirectory)"
+              artifactName: "$(artifactName)"
+      - job: runPreCommit
+        dependsOn: createBuildArtifact
+        displayName: "Run pre-commit on the code"
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: "$(artifactName)"
+              downloadPath: "$(System.ArtifactsDirectory)"
+          - task: Docker@2
+            displayName: Login to Docker container registry
+            name: dockerRegistryLogin
+            inputs:
+              command: login
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+          - template: steps/codequality/run-pre-commit.yaml@azure-devops-templates-iac
+            parameters:
+              workingDirectoryPath: "$(System.ArtifactsDirectory)/$(artifactName)"
+              enableGitInitialization: "true"
+              dockerPreCommitImageName: "$(dockerPreCommitImageName)"
+              dockerPreCommitImageTag: "$(dockerPreCommitImageTag)"
+              dockerPreCommitRegistry: "$(dockerPreCommitRegistry)"
+          - task: Docker@2
+            displayName: Logout of target Docker container registry
+            name: dockerRegistryLogout
+            condition: succeededOrFailed()
+            inputs:
+              command: logout
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+
+  - stage: deployTerraformModuleExamples
+    displayName: "Deployment"
+    dependsOn: validateCode
+    jobs:
+      - ${{ each example in parameters.exampleList }}:
+          - job: deployTerraformModuleExample_${{ example }}
+            displayName: "${{ example }} - Deploy Test Terraform module"
+            workspace:
+              clean: all
+            steps:
+              - checkout: none
+              - task: DownloadBuildArtifacts@0
+                inputs:
+                  artifactName: "$(artifactName)"
+                  downloadPath: "$(System.ArtifactsDirectory)"
+              - template: steps/terraform/run-azure-terraform-deployment.yaml@azure-devops-templates-iac
+                parameters:
+                  environment: "${{ example }}"
+                  connectedServiceNameARM: "$(connectedServiceNameARM)"
+                  workingDirectoryPath: "$(System.ArtifactsDirectory)/$(artifactName)/examples/${{ example }}/"
+                  enableTerraformRemoteBackend: "true"
+                  enableTerraformPlanUpload: "true"
+                  enableTerraformApplyLocal: "false"
+                  enableTerraformApplyRemote: "true"
+                  enableTerraformApplyDestroy: "true"
+                  terraformPlanfileName: "${{ example }}$(artifactName).tfplan"
+                  terraformStateConnectedServiceNameARM: "$(connectedServiceNameARM)"
+                  terraformStateResourceGroupName: "$(terraformStateResourceGroupName)"
+                  terraformStateStorageAccountName: "$(terraformStateStorageAccountName)"
+                  terraformStateBlobContainerName: "$(terraformStateBlobContainerName)"
+                  terraformStatefileName: "${{ example }}$(Build.Repository.Name).tfstate"
+                  terraformPlanBlobContainerName: "$(terraformPlanBlobContainerName)"
