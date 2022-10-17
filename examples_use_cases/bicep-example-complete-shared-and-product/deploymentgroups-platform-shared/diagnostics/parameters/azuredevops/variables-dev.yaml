@@ -1,0 +1,13 @@
+variables:
+  - name: connectedServiceNameARM
+    value: $(devConnectedServiceNameARM)
+  - name: resourceGroupCreationConnectedServiceNameARM
+    value: $(devConnectedServiceNameARM)
+  - name: parameterFileName
+    value: "dev.parameters.json"
+  - name: resourceGroupLocation
+    value: "Canada Central"
+  - name: resourceGroupShortLocation
+    value: "canadacentral"
+  - name: resourceGroupNamePrefix
+    value: rg-dev

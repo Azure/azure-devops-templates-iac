@@ -16,6 +16,10 @@ The folders in the `steps` are:
 - bicep: Every actions related to the deployment and management of Bicep resources.
 - tools: Every actions related to internal tools like sending a Teams notification or an email.
 
+The folders in the `jobs` are:
+
+- bicep: Actions related to the deployment and management of Bicep resources.
+
 The folder `example_use_cases` contain different examples demonstrating how to use the resusable definitions:
 
 - bicep-example-keyvault: Deploy a keyvault with a private endpoint using bicep on multiple environments dynamically and ensuring the quality of the code.

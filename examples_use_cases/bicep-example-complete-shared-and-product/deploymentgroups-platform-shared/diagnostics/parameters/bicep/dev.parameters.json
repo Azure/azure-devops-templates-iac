@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "diagnosticsEventHubNamespaceAuthorizationRuleName": {
+      "value": "RootManageSharedAccessKey"
+    },
+    "diagnosticsEventHubNamespaceName": {
+      "value": "ehdevdiagtest999"
+    },
+    "diagnosticsEventHubNamespaceTags": {
+      "value": {
+        "deploymentGroup": "Diagnostics",
+        "tagbyIT": "IT"
+      }
+    },
+    "diagnosticsLogAnalyticsWorkspaceName": {
+      "value": "ladevdiagtest999"
+    },
+    "diagnosticsLogAnalyticsWorkspaceTags": {
+      "value": {
+        "deploymentGroup": "Diagnostics",
+        "tagbyIT": "IT"
+      }
+    },
+    "diagnosticsResourceGroupTags": {
+      "value": {
+        "deploymentGroup": "Diagnostics",
+        "tagbyIT": "IT"
+      }
+    },
+    "diagnosticsStorageAccountName": {
+      "value": "sadevdiagtest999"
+    },
+    "diagnosticsStorageAccountTags": {
+      "value": {
+        "deploymentGroup": "Diagnostics",
+        "tagbyIT": "IT"
+      }
+    }
+  }
+}

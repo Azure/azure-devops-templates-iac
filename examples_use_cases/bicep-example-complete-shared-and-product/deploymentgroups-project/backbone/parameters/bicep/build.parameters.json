@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "keyVaultName": {
+      "value": "kvbuibackb999"
+    },
+    "keyVaultTags": {
+      "value": {
+        "param": "build",
+        "resource": "keyvault",
+        "test": "build"
+      }
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "build",
+        "resource": "resourcegroup",
+        "test": "build"
+      }
+    },
+    "servicePrincipalId": {
+      "value": ""
+    },
+    "storageAccountBlobContainers": {
+      "value": [
+        {
+          "name": "scripts",
+          "publicAccess": "None"
+        }
+      ]
+    },
+    "storageAccountKind": {
+      "value": "StorageV2"
+    },
+    "storageAccountName": {
+      "value": "sabuiteststo999"
+    },
+    "storageAccountSKU": {
+      "value": "Standard_LRS"
+    },
+    "storageAccountTags": {
+      "value": {
+        "param": "build",
+        "resource": "storageaccount",
+        "test": "build"
+      }
+    },
+    "virtualNetworkPrivateEndpointSettings": {
+      "value": {
+        "resourceGroupName": "rg-build-380-network",
+        "subnetName": "second",
+        "subscriptionId": "",
+        "virtualNetworkName": "vnet-build-default"
+      }
+    }
+  }
+}

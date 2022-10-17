@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "backupPolicyName": {
+      "value": "VMpolicy"
+    },
+    "backupVaultName": {
+      "value": "rsvdevback999"
+    },
+    "backupVaultResourceGroupName": {
+      "value": "rg-dev-backup"
+    },
+    "keyVaultName": {
+      "value": "kvdevbackb999"
+    },
+    "keyVaultResourceGroupName": {
+      "value": "rg-dev-backbone"
+    },
+    "keyVaultSecretName": {
+      "value": "vmAdminPassword"
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "dev",
+        "resource": "resourcegroup",
+        "test": "dev"
+      }
+    },
+    "virtualMachineLocalAdminUsername": {
+      "value": "vmdevadmin"
+    },
+    "virtualMachineName": {
+      "value": "vmtestdev999"
+    },
+    "virtualMachineTags": {
+      "value": {
+        "param": "dev",
+        "resource": "virtualmachine",
+        "test": "dev"
+      }
+    },
+    "virtualNetworkSubnetSettings": {
+      "value": {
+        "resourceGroupName": "rg-dev-network",
+        "subnetName": "default",
+        "subscriptionId": "",
+        "virtualNetworkName": "vnet-dev-default"
+      }
+    }
+  }
+}

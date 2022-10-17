@@ -1,0 +1,121 @@
+parameters:
+  - name: "artifactName"
+    displayName: "(String) Full name of the artifact to validate."
+    type: string
+  - name: "jobsSuffix"
+    displayName: "(String) Suffix to append to the job names. Useful if template ran in loop."
+    type: string
+    default: ""
+  - name: "enableBicepBuild"
+    displayName: "(String) String boolean determining if the build job is enabled or not"
+    type: string
+    default: "true"
+  - name: "enablePreCommit"
+    displayName: "(String) String boolean determining if the pre-commit job is enabled or not"
+    type: string
+    default: "true"
+  - name: "enablePSRule"
+    displayName: "(String) String boolean determining if the PSRule job is enabled or not"
+    type: string
+    default: "true"
+  - name: "artifactDownloadPath"
+    displayName: "(String) Path where the artifacts will be downloaded onto."
+    type: string
+    default: "$(System.ArtifactsDirectory)"
+  - name: "bicepFileName"
+    displayName: "(String) Name of the mail bicep file to evaluate at the root of the artifact."
+    type: string
+    default: "main.bicep"
+  - name: armServiceConnection
+    displayName: "(String) Name of the service connection to Azure on which the validation process can connect to for their tasks."
+    type: string
+    default: ""
+  - name: dockerRegistryServiceConnection
+    displayName: "(String) Name of the service connection to be used to connect to a Docker Registry"
+    type: string
+    default: ""
+  - name: preCommitDockerImageName
+    displayName: "(String) Name of the pre-commit image to pull/use."
+    type: string
+    default: "docker-pre-commit"
+  - name: preCommitDockerImageTag
+    displayName: "(String) Tag of the pre-commit image to pull/use."
+    type: string
+    default: "main"
+  - name: preCommitdockerRegistry
+    displayName: "(String) Registry where to pull the pre-commit image."
+    type: string
+    default: ""
+  - name: preCommitEnableGitInitialization
+    displayName: "(String) String boolean determining if during the pre-commit process, a git repo should be initialized. Set to true for use in CICD environment with artifact."
+    type: string
+    default: "true"
+  - name: preCommitEnableDockerRegistryLoginLogout
+    displayName: "(String) String boolean determining if during the pre-commit process, the docker image should be recovered on a registry with authentication."
+    type: string
+    default: "true"
+  - name: psRuleConfigurationFilePath
+    displayName: "(String) Path in the artifact where to get the ps rule configuration file. Should be at root directory."
+    type: string
+    default: "ps-rule.yaml"
+  - name: psRuleInputFiles
+    displayName: "(String) Expression determining which files will be validated by PSRule. Should be *.bicep for bicep."
+    type: string
+    default: "*.bicep"
+
+jobs:
+  - ${{ if eq(parameters.enableBicepBuild, 'true') }}:
+      - job: runBicepBuild${{ parameters.jobsSuffix }}
+        displayName: "${{ parameters.jobsSuffix }} Bicep build on artifact"
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: "${{ parameters.artifactName }}"
+              downloadPath: "${{ parameters.artifactDownloadPath }}"
+          - template: /steps/bicep/run-azure-bicep-build.yaml@azure-devops-templates-iac
+            parameters:
+              environment: "validation"
+              connectedServiceNameARM: "${{ parameters.armServiceConnection }}"
+              workingDirectoryPath: "${{ parameters.artifactDownloadPath }}/${{ parameters.artifactName }}/"
+              templateFilePath: "${{ parameters.artifactDownloadPath }}/${{ parameters.artifactName }}/${{ parameters.bicepFileName }}"
+  - ${{ if eq(parameters.enablePreCommit, 'true') }}:
+      - job: runPreCommit${{ parameters.jobsSuffix }}
+        displayName: "${{ parameters.jobsSuffix }} Pre-commit on artifact"
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: "${{ parameters.artifactName }}"
+              downloadPath: "${{ parameters.artifactDownloadPath }}"
+          - template: /steps/codequality/run-pre-commit.yaml@azure-devops-templates-iac
+            parameters:
+              workingDirectoryPath: "${{ parameters.artifactDownloadPath }}/${{ parameters.artifactName }}"
+              enableGitInitialization: "${{ parameters.preCommitEnableGitInitialization }}"
+              enableDockerRegistryLoginLogout: "${{ parameters.preCommitEnableDockerRegistryLoginLogout }}"
+              dockerRegistryServiceConnection: "${{ parameters.dockerRegistryServiceConnection }}"
+              dockerPreCommitImageName: "${{ parameters.preCommitDockerImageName }}"
+              dockerPreCommitImageTag: "${{ parameters.preCommitDockerImageTag }}"
+              dockerPreCommitRegistry: "${{ parameters.preCommitDockerRegistry }}"
+  - ${{ if eq(parameters.enablePSRule, 'true') }}:
+      - job: runPSRule${{ parameters.jobsSuffix }}
+        displayName: "${{ parameters.jobsSuffix }} PSRule on artifact"
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: "${{ parameters.artifactName }}"
+              downloadPath: "${{ parameters.artifactDownloadPath }}"
+          - template: /steps/codequality/run-psrule.yaml@azure-devops-templates-iac
+            parameters:
+              connectedServiceNameARM: "${{ parameters.armServiceConnection }}"
+              workingDirectoryPath: "${{ parameters.artifactDownloadPath }}/${{ parameters.artifactName }}/"
+              psRuleModules: "PSRule.Rules.Azure"
+              configurationFilePath: "${{ parameters.psRuleConfigurationFilePath }}"
+              inputFiles: "${{ parameters.psRuleInputFiles }}"

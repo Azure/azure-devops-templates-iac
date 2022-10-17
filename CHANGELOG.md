@@ -1,8 +1,16 @@
 # CHANGELOG
 
+## 1.1.0
+
+### Feature
+
+- Added validation job to aggregate validation tasks.
+- Added override parameters on bicep deployment task.
+- Added additional examples `bicep-example-complete-shared-and-product` in `examples_use_cases`.
+
 ## 1.0.0
 
-## Feature
+### Feature
 
 - Added SECURITY.md, SUPPORT.md, THIRD_PARTY_NOTICES.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md for compliance and governance purposes.
 - Added use cases in `examples_use_cases` folder based on real-life scenarios.
@@ -17,6 +25,6 @@
 - Add definition for build artifact creation.
 - Add beta definition for Teams notification.
 
-## Maintenance
+### Maintenance
 
 - Cleanup static references for tests.
