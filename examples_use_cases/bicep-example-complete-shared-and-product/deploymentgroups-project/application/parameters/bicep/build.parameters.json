@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "backupPolicyName": {
+      "value": "VMpolicy"
+    },
+    "backupVaultName": {
+      "value": "rsvbuiback999"
+    },
+    "backupVaultResourceGroupName": {
+      "value": "rg-build-backup"
+    },
+    "keyVaultName": {
+      "value": "kvbuibackb999"
+    },
+    "keyVaultResourceGroupName": {
+      "value": "rg-build-backbone"
+    },
+    "keyVaultSecretName": {
+      "value": "vmAdminPassword"
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "build",
+        "resource": "resourcegroup",
+        "test": "build"
+      }
+    },
+    "virtualMachineLocalAdminUsername": {
+      "value": "vmbuiadmin"
+    },
+    "virtualMachineName": {
+      "value": "vmtestbuild999"
+    },
+    "virtualMachineTags": {
+      "value": {
+        "param": "build",
+        "resource": "virtualmachine",
+        "test": "build"
+      }
+    },
+    "virtualNetworkSubnetSettings": {
+      "value": {
+        "resourceGroupName": "rg-build-network",
+        "subnetName": "default",
+        "subscriptionId": "",
+        "virtualNetworkName": "vnet-build-default"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+variables:
+  validationConnectedServiceNameARM: "#{validationARMServiceConnection}#"
+  validationDockerRegistryServiceConnection: "#{validationDockerRegistryServiceConnection}#"
+  buildConnectedServiceNameARM: "#{buildARMServiceConnection}#"
+  devConnectedServiceNameARM: "#{devARMServiceConnection}#"

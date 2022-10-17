@@ -1,0 +1,25 @@
+variables:
+  - name: connectedServiceNameARM
+    value: $(buildConnectedServiceNameARM)
+  - name: resourceGroupCreationConnectedServiceNameARM
+    value: $(buildConnectedServiceNameARM)
+  - name: parameterFileName
+    value: "build.parameters.json"
+  - name: resourceGroupLocation
+    value: "Canada Central"
+  - name: resourceGroupShortLocation
+    value: "canadacentral"
+  - name: resourceGroupNamePrefix
+    value: rg-build
+  - name: diagnosticsSubscriptionId
+    value: ""
+  - name: diagnosticsResourceGroupName
+    value: "rg-build-diagnostics"
+  - name: diagnosticsLogAnalyticsWorkspaceName
+    value: "labuidiagtest999"
+  - name: diagnosticsStorageAccountName
+    value: "sabuidiagtest999"
+  - name: diagnosticsEventHubNamespaceName
+    value: "ehbuidiagtest999"
+  - name: diagnosticsEventHubNamespaceAuthorizationRuleName
+    value: "RootManageSharedAccessKey"

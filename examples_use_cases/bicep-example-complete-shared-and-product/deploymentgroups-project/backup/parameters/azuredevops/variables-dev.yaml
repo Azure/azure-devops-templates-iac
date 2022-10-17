@@ -1,0 +1,25 @@
+variables:
+  - name: connectedServiceNameARM
+    value: $(devConnectedServiceNameARM)
+  - name: resourceGroupCreationConnectedServiceNameARM
+    value: $(devConnectedServiceNameARM)
+  - name: parameterFileName
+    value: "dev.parameters.json"
+  - name: resourceGroupLocation
+    value: "Canada Central"
+  - name: resourceGroupShortLocation
+    value: "canadacentral"
+  - name: resourceGroupNamePrefix
+    value: rg-dev
+  - name: diagnosticsSubscriptionId
+    value: ""
+  - name: diagnosticsResourceGroupName
+    value: "rg-dev-diagnostics"
+  - name: diagnosticsLogAnalyticsWorkspaceName
+    value: "ladevdiagtest999"
+  - name: diagnosticsStorageAccountName
+    value: "sadevdiagtest999"
+  - name: diagnosticsEventHubNamespaceName
+    value: "ehdevdiagtest999"
+  - name: diagnosticsEventHubNamespaceAuthorizationRuleName
+    value: "RootManageSharedAccessKey"

@@ -1,0 +1,199 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "networkSecurityGroups": {
+      "value": [
+        {
+          "name": "nsg-build-default",
+          "securityRules": [
+            {
+              "name": "Shared",
+              "properties": {
+                "access": "Allow",
+                "description": "Allow everything in.",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "*",
+                "direction": "Inbound",
+                "priority": 100,
+                "protocol": "*",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*"
+              }
+            },
+            {
+              "name": "Specific-default",
+              "properties": {
+                "access": "Allow",
+                "description": "Tests specific IPs and ports",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "8080",
+                "direction": "Inbound",
+                "priority": 110,
+                "protocol": "*",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*"
+              }
+            },
+            {
+              "name": "Ranges",
+              "properties": {
+                "access": "Allow",
+                "description": "Tests Ranges",
+                "destinationAddressPrefixes": [
+                  "10.2.0.0/16",
+                  "10.3.0.0/16"
+                ],
+                "destinationPortRanges": [
+                  "90",
+                  "91"
+                ],
+                "direction": "Inbound",
+                "priority": 120,
+                "protocol": "*",
+                "sourceAddressPrefixes": [
+                  "10.0.0.0/16",
+                  "10.1.0.0/16"
+                ],
+                "sourcePortRanges": [
+                  "80",
+                  "81"
+                ]
+              }
+            }
+          ],
+          "tags": {}
+        },
+        {
+          "name": "nsg-build-app",
+          "securityRules": [
+            {
+              "name": "Shared",
+              "properties": {
+                "access": "Allow",
+                "description": "Allow everything in.",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "*",
+                "direction": "Inbound",
+                "priority": 100,
+                "protocol": "*",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*"
+              }
+            },
+            {
+              "name": "Specific-app",
+              "properties": {
+                "access": "Allow",
+                "description": "Tests specific IPs and ports",
+                "destinationAddressPrefix": "*",
+                "destinationPortRange": "8080",
+                "direction": "Inbound",
+                "priority": 110,
+                "protocol": "*",
+                "sourceAddressPrefix": "*",
+                "sourcePortRange": "*"
+              }
+            },
+            {
+              "name": "Ranges-app",
+              "properties": {
+                "access": "Allow",
+                "description": "Tests Ranges",
+                "destinationAddressPrefixes": [
+                  "10.2.0.0/16",
+                  "10.3.0.0/16"
+                ],
+                "destinationPortRanges": [
+                  "90",
+                  "91"
+                ],
+                "direction": "Inbound",
+                "priority": 120,
+                "protocol": "*",
+                "sourceAddressPrefixes": [
+                  "10.0.0.0/16",
+                  "10.1.0.0/16"
+                ],
+                "sourcePortRanges": [
+                  "80",
+                  "81"
+                ]
+              }
+            }
+          ],
+          "tags": {}
+        }
+      ]
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "build",
+        "resource": "resourcegroup",
+        "test": "build"
+      }
+    },
+    "routeTables": {
+      "value": [
+        {
+          "disableBgpRoutePropagation": true,
+          "name": "rt-build-default",
+          "routes": [],
+          "tags": {}
+        },
+        {
+          "disableBgpRoutePropagation": true,
+          "name": "rt-build-app",
+          "routes": [],
+          "tags": {}
+        }
+      ]
+    },
+    "virtualNetworkAddressPrefixes": {
+      "value": [
+        "10.0.0.0/16"
+      ]
+    },
+    "virtualNetworkName": {
+      "value": "vnet-build-default"
+    },
+    "virtualNetworkSubnets": {
+      "value": [
+        {
+          "addressPrefix": "10.0.0.0/24",
+          "delegations": [],
+          "name": "default",
+          "networkSecurityGroupName": "nsg-build-default",
+          "privateEndpointNetworkPolicies": "Disabled",
+          "privateLinkServiceNetworkPolicies": "Disabled",
+          "routeTableName": "rt-build-default",
+          "serviceEndpoints": [
+            {
+              "locations": [
+                "*"
+              ],
+              "service": "Microsoft.Storage"
+            }
+          ]
+        },
+        {
+          "addressPrefix": "10.0.1.0/24",
+          "delegations": [],
+          "name": "second",
+          "networkSecurityGroupName": "nsg-build-default",
+          "privateEndpointNetworkPolicies": "Disabled",
+          "privateLinkServiceNetworkPolicies": "Disabled",
+          "routeTableName": "rt-build-default",
+          "serviceEndpoints": []
+        }
+      ]
+    },
+    "virtualNetworkTags": {
+      "value": {
+        "param": "build",
+        "resource": "virtualnetwork",
+        "test": "build"
+      }
+    }
+  }
+}

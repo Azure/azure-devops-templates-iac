@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "recoveryServiceVaultName": {
+      "value": "rsvdevback999"
+    },
+    "recoveryServiceVaultTags": {
+      "value": {
+        "param": "dev",
+        "resource": "recoveryservicevault",
+        "test": "dev"
+      }
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "dev",
+        "resource": "resourcegroup",
+        "test": "dev"
+      }
+    }
+  }
+}

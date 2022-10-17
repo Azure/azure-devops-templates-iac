@@ -1,0 +1,200 @@
+parameters:
+  - name: environments
+    displayName: "environments : Name of the environments where to deploy the resources. The environments needs to have the same name as the Azure DevOps environments."
+    type: object
+    default:
+      - build
+      - dev
+  - name: enableResourceGroupCreationUpdate
+    displayName: "enableResourceGroupCreationUpdate : Enable or not the tasks to create or update (ex: a RBAC to the RG) a resource group."
+    type: string
+    default: "true"
+    values:
+      - "true"
+      - "false"
+  - name: deploymentGroups
+    displayName: "deploymentGroups : Ordered list of deployment groups to deploy during the pipeline execution."
+    type: object
+    default:
+      - name: "backbone"
+        groupDependencies: []
+        moduleDependencies:
+          [
+            "Microsoft.Resources/tags",
+            "Microsoft.Authorization/locks",
+            "Microsoft.Storage/storageAccounts",
+            "Microsoft.Network/privateEndpoints",
+            "Microsoft.KeyVault/vaults",
+          ]
+      - name: "backup"
+        groupDependencies: ["backbone"]
+        moduleDependencies:
+          [
+            "Microsoft.Resources/tags",
+            "Microsoft.Authorization/locks",
+            "Microsoft.RecoveryServices/vaults",
+            "Microsoft.Network/privateEndpoints",
+          ]
+      - name: "application"
+        groupDependencies: ["backbone", "backup"]
+        moduleDependencies:
+          [
+            "Microsoft.Resources/tags",
+            "Microsoft.Authorization/locks",
+            "Microsoft.Compute/virtualMachines",
+            "Microsoft.Network/networkInterfaces",
+            "Microsoft.RecoveryServices/vaults",
+            "Microsoft.Network/publicIPAddresses",
+          ]
+
+resources:
+  repositories:
+    - repository: azure-devops-templates-iac
+      name: "#{ADOProject}#/azure-devops-templates-iac"
+      type: git
+      ref: refs/tags/1.1.0
+    - repository: ResourceModules
+      name: Azure/ResourceModules
+      type: github
+      endpoint: "#{GithubServiceConnection}#"
+      ref: refs/tags/v0.7.0
+
+trigger: none
+
+pool:
+  vmImage: "ubuntu-22.04"
+
+variables:
+  - name: artifactNamePrefix
+    value: "$(Build.Repository.Name)-$(Build.BuildNumber)"
+  - name: deploymentGroupRootFolderName
+    value: "deploymentgroups-project"
+  - template: variables-common-service-connections.yaml
+
+stages:
+  - stage: createArtifact
+    displayName: "Create Artifacts for deployment groups."
+    jobs:
+      - ${{ each group in parameters.deploymentGroups }}:
+          - job: createBuildArtifact_${{ group.name }}
+            displayName: "Create pipeline artifact - ${{ group.name }}"
+            steps:
+              - checkout: self
+              - checkout: ResourceModules
+              - ${{ each module in group.moduleDependencies }}:
+                  - template: /steps/bicep/initialize-bicep-dependencies.yaml@azure-devops-templates-iac
+                    parameters:
+                      moduleName: "${{ module }}"
+                      sourceDirectory: "$(Build.SourcesDirectory)/ResourceModules/modules/${{ module }}"
+                      destinationDirectory: "$(Build.ArtifactStagingDirectory)/${{ group.name }}/modules/${{ module }}"
+              - task: CopyFiles@2
+                displayName: "Copy dependency validation files from root directory - ${{ group.name }}"
+                inputs:
+                  SourceFolder: "$(Build.SourcesDirectory)/$(Build.Repository.Name)"
+                  Contents: |
+                    .pre-commit-config.yaml
+                    .gitignore
+                    ps-rule.yaml
+                    LICENSE
+                  TargetFolder: "$(Build.ArtifactStagingDirectory)/${{ group.name }}"
+              - template: /steps/tools/create-build-artifact.yaml@azure-devops-templates-iac
+                parameters:
+                  sourceDirectory: "$(Build.SourcesDirectory)/$(Build.Repository.Name)/$(deploymentGroupRootFolderName)/${{ group.name }}"
+                  artifactDirectory: "$(Build.ArtifactStagingDirectory)/${{ group.name }}"
+                  artifactName: "$(artifactNamePrefix)-${{ group.name }}"
+
+  - stage: validateArtifact
+    displayName: "Validate Artifacts for deployment groups."
+    dependsOn: createArtifact
+    jobs:
+      - ${{ each group in parameters.deploymentGroups }}:
+          - template: /jobs/bicep/execute-validation-jobs.yaml@azure-devops-templates-iac
+            parameters:
+              artifactName: "$(artifactNamePrefix)-${{ group.name }}"
+              jobsSuffix: "${{ group.name }}"
+              enableBicepBuild: "true"
+              enablePreCommit: "true"
+              enablePSRule: "true"
+              artifactDownloadPath: "$(System.ArtifactsDirectory)"
+              bicepFileName: "main.bicep"
+              armServiceConnection: "$(validationConnectedServiceNameARM)"
+              dockerRegistryServiceConnection: "$(validationDockerRegistryServiceConnection)"
+              preCommitdockerImageName: "docker-pre-commit"
+              preCommitdockerImageTag: "main"
+              preCommitdockerRegistry: "$(validationDockerRegistryServiceConnection).azurecr.io"
+              preCommitEnableGitInitialization: "true"
+              preCommitEnableDockerRegistryLoginLogout: "true"
+              psRuleConfigurationFilePath: "ps-rule.yaml"
+              psRuleInputFiles: "*.bicep"
+
+  - ${{ each environment in parameters.environments }}:
+      - stage: deployBicep${{ environment }}
+        displayName: "${{ environment }} - Bicep Deployment"
+        ${{ if eq(environment, 'build') }}:
+          dependsOn: validateArtifact
+        ${{ if eq(environment, 'dev') }}:
+          dependsOn: deployBicepbuild
+        jobs:
+          - ${{ each group in parameters.deploymentGroups }}:
+              - deployment: deployBicep${{ environment }}${{ group.name }}
+                displayName: "${{ group.name }} - Deploy Bicep deployment"
+                environment: ${{ environment }}
+                dependsOn:
+                  - ${{ each dependency in group.groupDependencies }}:
+                      - deployBicep${{ environment }}${{ dependency }}
+                workspace:
+                  clean: all
+                variables:
+                  - template: /${{variables['deploymentGroupRootFolderName']}}/${{ group.name }}/parameters/azuredevops/variables-${{ environment }}.yaml
+                  - name: resourceGroupName
+                    value: $(resourceGroupNamePrefix)-${{ group.name }}
+                strategy:
+                  runOnce:
+                    deploy:
+                      steps:
+                        - checkout: none
+                        - task: DownloadBuildArtifacts@0
+                          inputs:
+                            artifactName: "$(artifactNamePrefix)-${{ group.name }}"
+                            downloadPath: "$(System.ArtifactsDirectory)"
+                        - ${{ if eq(parameters.enableResourceGroupCreationUpdate, 'true') }}:
+                            - task: AzureCLI@2
+                              name: createRG${{ environment }}${{ group.name }}
+                              displayName: "Create resource group if not exists"
+                              inputs:
+                                azureSubscription: "${{ variables.resourceGroupCreationConnectedServiceNameARM }}"
+                                scriptLocation: "inlineScript"
+                                scriptType: "pscore"
+                                workingDirectory: "$(System.ArtifactsDirectory)/$(artifactNamePrefix)-${{ group.name }}"
+                                inlineScript: |
+                                  if( $(az group exists --name $(resourceGroupName)) -eq "false" ) {
+                                    az group create --name $(resourceGroupName) --location $(resourceGroupShortLocation) --verbose
+                                    #Leaving this here to allow deployment of RGs with a RBAC assignment
+                                    #coming from secondary SP with User Access Administrator to assign the SP for ARM deployment UAA rights and contributor on the RG.
+                                  }else{
+                                    Write-host "Resource Group already exists. Deployment will update current one."
+                                  }
+                        - template: /steps/bicep/run-azure-bicep-deployment.yaml@azure-devops-templates-iac
+                          parameters:
+                            environment: "${{ environment }}"
+                            connectedServiceNameARM: "${{ variables.connectedServiceNameARM }}"
+                            workingDirectoryPath: "$(System.ArtifactsDirectory)/$(artifactNamePrefix)-${{ group.name }}"
+                            deploymentScope: "resourcegroup"
+                            deploymentMode: "incremental"
+                            templateFilePath: "$(System.ArtifactsDirectory)/$(artifactNamePrefix)-${{ group.name }}/main.bicep"
+                            templateParametersFilePath: "$(System.ArtifactsDirectory)/$(artifactNamePrefix)-${{ group.name }}/parameters/bicep/$(parameterFileName)"
+                            templateOverrideParameters: '-diagnosticsSettings {"subscriptionId": "$(diagnosticsSubscriptionId)", "resourceGroupName": "$(diagnosticsResourceGroupName)", "logAnalyticsWorkspaceName": "$(diagnosticsLogAnalyticsWorkspaceName)", "storageAccountName": "$(diagnosticsStorageAccountName)", "eventHubNamespaceName": "$(diagnosticsEventHubNamespaceName)", "eventHubNamespaceAuthorizationRuleName": "$(diagnosticsEventHubNamespaceAuthorizationRuleName)"}'
+                            targetResourceGroupName: "$(resourceGroupName)"
+                            targetLocation: "$(resourceGroupLocation)"
+                            deploymentName: "${{ environment }}${{ group.name }}$(Build.BuildId)"
+                            deploymentOutputsVariableName: "${{ environment }}${{ group.name }}outputs"
+                        - task: AzureCLI@2
+                          name: displayOutputs
+                          displayName: "Display outputs from Bicep deployment"
+                          inputs:
+                            azureSubscription: "${{ variables.connectedServiceNameARM }}"
+                            scriptLocation: inlineScript
+                            scriptType: pscore
+                            workingDirectory: "$(System.ArtifactsDirectory)/$(artifactName)"
+                            inlineScript: |
+                              '$(${{ environment }}${{ group.name }}outputs)'

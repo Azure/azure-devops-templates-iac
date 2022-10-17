@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "recoveryServiceVaultName": {
+      "value": "rsvbuiback999"
+    },
+    "recoveryServiceVaultTags": {
+      "value": {
+        "param": "build",
+        "resource": "recoveryservicevault",
+        "test": "build"
+      }
+    },
+    "resourceGroupTags": {
+      "value": {
+        "param": "build",
+        "resource": "resourcegroup",
+        "test": "build"
+      }
+    }
+  }
+}
