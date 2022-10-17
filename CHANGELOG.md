@@ -4,7 +4,9 @@
 
 ### Feature
 
-- 
+- Added validation job to aggregate validation tasks.
+- Added override parameters on bicep deployment task.
+- Added additional examples `bicep-example-complete-shared-and-product` in `examples_use_cases`.
 
 ## 1.0.0
 
