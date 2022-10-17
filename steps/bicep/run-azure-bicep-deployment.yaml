@@ -31,6 +31,10 @@ parameters:
     displayName: "(String) Path to main bicep template parameter file to deploy."
     type: string
     default: ""
+  - name: "templateOverrideParameters"
+    displayName: "(String) String containing the parameters to override in the template."
+    type: string
+    default: ""
   - name: "targetResourceGroupName"
     displayName: "(String) Name of the resource group where the template will be deployed in. Used only in Resource Group Deployement Scope."
     type: string
@@ -83,6 +87,7 @@ steps:
           templateLocation: "Linked artifact"
           csmFile: "${{ parameters.templateFilePath }}"
           csmParametersFile: "${{ parameters.templateParametersFilePath }}"
+          overrideParameters: "${{ parameters.templateOverrideParameters }}"
           deploymentMode: "${{ parameters.deploymentMode }}"
           deploymentName: "${{ parameters.deploymentName }}"
           deploymentOutputs: "${{ parameters.deploymentOutputsVariableName }}"
@@ -110,6 +115,7 @@ steps:
           templateLocation: "Linked artifact"
           csmFile: "${{ parameters.templateFilePath }}"
           csmParametersFile: "${{ parameters.templateParametersFilePath }}"
+          overrideParameters: "${{ parameters.templateOverrideParameters }}"
           deploymentMode: "${{ parameters.deploymentMode }}"
           deploymentName: "${{ parameters.deploymentName }}"
           deploymentOutputs: "${{ parameters.deploymentOutputsVariableName }}"
@@ -125,6 +131,7 @@ steps:
           templateLocation: "Linked artifact"
           csmFile: "${{ parameters.templateFilePath }}"
           csmParametersFile: "${{ parameters.templateParametersFilePath }}"
+          overrideParameters: "${{ parameters.templateOverrideParameters }}"
           deploymentMode: "${{ parameters.deploymentMode }}"
           deploymentName: "${{ parameters.deploymentName }}"
           deploymentOutputs: "${{ parameters.deploymentOutputsVariableName }}"
